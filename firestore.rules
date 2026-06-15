@@ -1,0 +1,95 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Función: verifica si el usuario está autenticado
+    function isAuth() {
+      return request.auth != null;
+    }
+
+    // Función: verifica si el usuario autenticado tiene el rol de "sastre"
+    // Se obtiene el rol desde el documento del usuario
+    function isSastre() {
+      return isAuth() && 
+             get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.rol == 'sastre';
+    }
+
+    // Función: verifica si el documento a acceder pertenece al cliente autenticado
+    function isOwner(uid) {
+      return isAuth() && request.auth.uid == uid;
+    }
+
+    // ==========================================
+    // Colección: usuarios
+    // ==========================================
+    match /usuarios/{uid} {
+      // Un usuario puede leer su propio perfil. El sastre puede leer todos.
+      allow get: if isOwner(uid) || isSastre();
+      // Permitir listar usuarios (necesario para verificar unicidad de cédula antes del registro)
+      allow list: if true;
+      
+      // La creación de usuarios se hace tras el registro. 
+      // Permitimos crear si el UID del documento coincide con el auth del request,
+      // y si se asigna el rol 'cliente' por defecto. (Evitar escalada de privilegios)
+      allow create: if isOwner(uid) 
+                    && request.resource.data.rol == 'cliente';
+      
+      // Un usuario puede actualizar sus datos (excepto el rol y la cédula).
+      // El sastre puede actualizar cualquier usuario, pero no escalar roles.
+      allow update: if (isOwner(uid) || isSastre())
+                    && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['rol', 'cedula']));
+      
+      // Solo el sastre puede eliminar usuarios.
+      allow delete: if isSastre();
+    }
+
+    // ==========================================
+    // Colección: telas
+    // ==========================================
+    match /telas/{telaId} {
+      // Todos los usuarios autenticados pueden ver las telas (para mostrar nombres en prendas)
+      allow read: if isAuth();
+      // Solo el sastre puede gestionar (crear, actualizar, eliminar) las telas
+      allow write: if isSastre();
+    }
+
+    // ==========================================
+    // Colección: estilos
+    // ==========================================
+    match /estilos/{estiloId} {
+      // Todos los usuarios autenticados pueden ver los estilos
+      allow read: if isAuth();
+      // Solo el sastre puede gestionar los estilos
+      allow write: if isSastre();
+    }
+
+    // ==========================================
+    // Colección: prendas
+    // ==========================================
+    match /prendas/{prendaId} {
+      // Un cliente solo puede ver sus propias prendas. El sastre puede ver todas.
+      allow read: if isSastre() || (isAuth() && resource.data.clienteId == request.auth.uid);
+      
+      // Solo el sastre puede crear, actualizar y eliminar prendas.
+      allow write: if isSastre();
+    }
+
+    // ==========================================
+    // Colección: citas
+    // ==========================================
+    match /citas/{citaId} {
+      // Un cliente solo puede leer sus propias citas. El sastre puede leer todas.
+      allow read: if isSastre() || (isAuth() && resource.data.clienteId == request.auth.uid);
+      
+      // Crear: El cliente puede crear citas para sí mismo. El sastre puede crear para cualquiera.
+      allow create: if isSastre() || (isAuth() && request.resource.data.clienteId == request.auth.uid);
+      
+      // Actualizar: El cliente puede actualizar sus citas (ej: reprogramar o cancelar). El sastre puede actualizar cualquier cita.
+      allow update: if isSastre() || (isAuth() && resource.data.clienteId == request.auth.uid);
+      
+      // Eliminar: Solo el sastre puede eliminar citas (borrado duro). Los clientes solo pueden "cancelar" (actualización de estado).
+      allow delete: if isSastre();
+    }
+  }
+}
