@@ -8,6 +8,7 @@ import { useAuth } from "../../context/AuthContext";
 import { useCitas } from "../../hooks/useCitas";
 import { Spinner } from "../common/Spinner";
 import { Modal } from "../common/Modal";
+import { useToast } from "../../context/ToastContext";
 import { CitaForm } from "./CitaForm";
 import { ESTADOS_CITA } from "../../utils/constantes";
 import { CalendarX } from "lucide-react";
@@ -19,25 +20,40 @@ const localizer = dateFnsLocalizer({ format, parse, startOfWeek, getDay, locales
 export function MisCitas() {
   const { usuario } = useAuth();
   const { citas, cargando, cancelarCita } = useCitas(usuario?.uid);
+  const { showToast } = useToast();
   const [modalAbierto, setModalAbierto] = useState(false);
   const [citaSeleccionada, setCitaSeleccionada] = useState<Cita | null>(null);
 
+  const [fechaCalendario, setFechaCalendario] = useState(new Date());
+  const [vistaCalendario, setVistaCalendario] = useState<any>("month");
+
   if (cargando) return <div className="flex-center p-8"><Spinner /></div>;
 
-  const eventos = citas.map((cita) => {
-    const [year, month, day] = cita.fecha.split("-").map(Number);
-    const [hour, minute] = cita.hora.split(":").map(Number);
-    const startDate = new Date(year, month - 1, day, hour, minute);
-    const endDate = new Date(startDate.getTime() + 60 * 60 * 1000);
+  const eventos = citas
+    .filter((cita) => cita && cita.fecha && cita.hora)
+    .map((cita) => {
+      try {
+        const [year, month, day] = cita.fecha.split("-").map(Number);
+        const [hour, minute] = cita.hora.split(":").map(Number);
+        if (isNaN(year) || isNaN(month) || isNaN(day) || isNaN(hour) || isNaN(minute)) {
+          return null;
+        }
+        const startDate = new Date(year, month - 1, day, hour, minute);
+        const endDate = new Date(startDate.getTime() + 60 * 60 * 1000);
 
-    return {
-      id: cita.id,
-      title: `${cita.tipo} - ${cita.estado}`,
-      start: startDate,
-      end: endDate,
-      resource: cita,
-    };
-  });
+        return {
+          id: cita.id,
+          title: `${cita.tipo} - ${cita.estado}`,
+          start: startDate,
+          end: endDate,
+          resource: cita,
+        };
+      } catch (e) {
+        console.error("Error al procesar cita cliente:", cita, e);
+        return null;
+      }
+    })
+    .filter((e): e is NonNullable<typeof e> => e !== null);
 
   const eventStyleGetter = (event: any) => {
     const cita = event.resource as Cita;
@@ -76,7 +92,7 @@ export function MisCitas() {
         setModalAbierto(false);
       } catch (error) {
         console.error("Error al cancelar:", error);
-        alert("Hubo un error al cancelar la cita.");
+        showToast("Hubo un error al cancelar la cita.", "error");
       }
     }
   };
@@ -106,6 +122,10 @@ export function MisCitas() {
           startAccessor="start"
           endAccessor="end"
           style={{ height: "100%" }}
+          date={fechaCalendario}
+          onNavigate={(date) => setFechaCalendario(date)}
+          view={vistaCalendario}
+          onView={(view) => setVistaCalendario(view)}
           messages={{
             next: "Sig", previous: "Ant", today: "Hoy", month: "Mes",
             week: "Semana", day: "Día", noEventsInRange: "No tienes citas en este periodo.",

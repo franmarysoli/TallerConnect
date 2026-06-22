@@ -14,7 +14,7 @@ export function Navbar() {
     setIsMenuOpen(false);
   }, [location.pathname]);
 
-  const navLinkClass = ({ isActive }: { isActive: boolean }) => 
+  const navLinkClass = ({ isActive }: { isActive: boolean }) =>
     `nav-link ${isActive ? 'active' : ''}`;
 
   return (
@@ -26,8 +26,8 @@ export function Navbar() {
             <span className="logo-text ml-2">TallerConnect</span>
           </Link>
           {usuario && (
-            <button 
-              className="mobile-menu-btn" 
+            <button
+              className="mobile-menu-btn"
               onClick={() => setIsMenuOpen(!isMenuOpen)}
               aria-label="Toggle menu"
             >
@@ -41,9 +41,10 @@ export function Navbar() {
             {usuario.rol === "cliente" && (
               <div className="nav-links">
                 <NavLink to="/cliente/inicio" className={navLinkClass} onClick={() => setIsMenuOpen(false)}>Inicio</NavLink>
-                <NavLink to="/cliente/prendas" className={navLinkClass} onClick={() => setIsMenuOpen(false)}>Mis Prendas</NavLink>
-                <NavLink to="/cliente/medidas" className={navLinkClass} onClick={() => setIsMenuOpen(false)}>Mis Medidas</NavLink>
-                <NavLink to="/cliente/citas" className={navLinkClass} onClick={() => setIsMenuOpen(false)}>Mis Citas</NavLink>
+                <NavLink to="/cliente/prendas" className={navLinkClass} onClick={() => setIsMenuOpen(false)}>Prendas</NavLink>
+                <NavLink to="/cliente/medidas" className={navLinkClass} onClick={() => setIsMenuOpen(false)}>Medidas</NavLink>
+                <NavLink to="/cliente/citas" className={navLinkClass} onClick={() => setIsMenuOpen(false)}>Citas</NavLink>
+                <NavLink to="/cliente/perfil" className={navLinkClass} onClick={() => setIsMenuOpen(false)}>Mi Perfil</NavLink>
               </div>
             )}
 
@@ -66,7 +67,7 @@ export function Navbar() {
                 <span className="user-name">{usuario.nombre}</span>
                 <span className="user-role badge-role">{usuario.rol}</span>
               </div>
-              <button 
+              <button
                 onClick={() => { cerrarSesion(); setIsMenuOpen(false); }}
                 className="btn btn-outline btn-sm ml-4"
                 title="Cerrar sesión"

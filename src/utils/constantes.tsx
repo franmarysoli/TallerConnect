@@ -5,7 +5,6 @@
  * estados, medidas, horarios, colores, etc.
  */
 
-import React from 'react';
 import { Scissors, Ruler, Shirt, CheckCircle } from 'lucide-react';
 
 // ============================================================

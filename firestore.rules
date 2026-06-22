@@ -79,8 +79,13 @@ service cloud.firestore {
     // Colección: citas
     // ==========================================
     match /citas/{citaId} {
-      // Un cliente solo puede leer sus propias citas. El sastre puede leer todas.
-      allow read: if isSastre() || (isAuth() && resource.data.clienteId == request.auth.uid);
+      // GET (documento individual): Un cliente solo puede leer sus propias citas. El sastre puede leer todas.
+      allow get: if isSastre() || (isAuth() && resource.data.clienteId == request.auth.uid);
+      
+      // LIST (queries): Cualquier usuario autenticado puede hacer queries sobre citas.
+      // Necesario para: validar disponibilidad de horarios (horarioDisponible)
+      // y para que los clientes listen sus propias citas con filtro where(clienteId == uid).
+      allow list: if isAuth();
       
       // Crear: El cliente puede crear citas para sí mismo. El sastre puede crear para cualquiera.
       allow create: if isSastre() || (isAuth() && request.resource.data.clienteId == request.auth.uid);

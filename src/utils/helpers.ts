@@ -33,7 +33,7 @@ export function formatearMoneda(valor: number): string {
     style: "currency",
     currency: "COP",
     minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
+    maximumFractionDigits: 2,
   }).format(valor);
 }
 

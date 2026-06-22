@@ -41,8 +41,8 @@ export function TelaForm({ tela, onClose }: TelaFormProps) {
     if (Number(formData.metrosDisponibles) < 0) {
       return setErrorLocal("Los metros disponibles no pueden ser negativos.");
     }
-    if (Number(formData.precioMetro) <= 0) {
-      return setErrorLocal("El precio por metro debe ser mayor a 0.");
+    if (Number(formData.precioMetro) < 1 || Number(formData.precioMetro) > 100) {
+      return setErrorLocal("El precio por metro debe estar entre 1 y 100.");
     }
 
     setIsSubmitting(true);
@@ -109,8 +109,9 @@ export function TelaForm({ tela, onClose }: TelaFormProps) {
             id="precioMetro"
             name="precioMetro"
             type="number"
-            step="1000" // Incrementos de 1000
-            min="0"
+            step="0.01" // Permitir decimales como 1.5
+            min="1"
+            max="100"
             value={formData.precioMetro}
             onChange={handleChange}
             required

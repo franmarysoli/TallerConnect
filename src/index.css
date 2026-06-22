@@ -509,6 +509,10 @@ input:disabled {
   max-width: 600px;
 }
 
+.login-card .form-group {
+  text-align: left;
+}
+
 .login-header {
   margin-bottom: var(--space-2xl);
 }
@@ -796,4 +800,19 @@ input:disabled {
   .sastre-nav-links {
     display: flex !important;
   }
+}
+
+/* ==========================================================================
+   No-Spinner: Ocultar flechas de inputs numéricos
+   ========================================================================== */
+/* WebKit (Chrome, Safari, Edge) */
+input[type=number].no-spinner::-webkit-outer-spin-button,
+input[type=number].no-spinner::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Firefox */
+input[type=number].no-spinner {
+  -moz-appearance: textfield;
 }

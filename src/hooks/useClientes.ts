@@ -1,103 +1,151 @@
 /**
- * useClientes.ts — Hook para gestión de clientes
- * 
- * Provee funciones CRUD para la colección "usuarios" (rol = "cliente").
- * Usa onSnapshot para datos en tiempo real.
+ * useClientes.ts — Hook para gestión de clientes con paginación
  */
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   collection,
   query,
   where,
-  onSnapshot,
   doc,
   updateDoc,
   getDocs,
   writeBatch,
+  limit,
+  startAfter,
+  orderBy,
+  type QueryDocumentSnapshot,
+  type DocumentData,
 } from "firebase/firestore";
 import { db } from "../firebase/config";
 import type { Usuario } from "../types";
+import { useToast } from "../context/ToastContext";
 
-/** Hook para CRUD de clientes (solo el sastre lo usa) */
-export function useClientes() {
+/** Hook para CRUD de clientes con paginación */
+export function useClientes(pageSize = 10) {
   const [clientes, setClientes] = useState<Usuario[]>([]);
   const [cargando, setCargando] = useState(true);
+  const { showToast } = useToast();
 
-  // Escuchar en tiempo real los cambios en la colección de clientes
-  useEffect(() => {
-    const q = query(
-      collection(db, "usuarios"),
-      where("rol", "==", "cliente")
-    );
+  // Paginación cursores
+  const [lastDocs, setLastDocs] = useState<QueryDocumentSnapshot<DocumentData>[]>([]);
+  const [currentPage, setCurrentPage] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
+  // Cargar clientes
+  const fetchClientes = useCallback(async (pageIndex: number, reset = false) => {
+    setCargando(true);
+    try {
+      let q = query(
+        collection(db, "usuarios"),
+        where("rol", "==", "cliente"),
+        orderBy("nombre", "asc"),
+        limit(pageSize)
+      );
+
+      // Si no es la primera página y no estamos reseteando
+      if (pageIndex > 0 && !reset && lastDocs[pageIndex - 1]) {
+        q = query(q, startAfter(lastDocs[pageIndex - 1]));
+      }
+
+      const snapshot = await getDocs(q);
       const datos: Usuario[] = [];
       snapshot.forEach((docSnap) => {
         datos.push(docSnap.data() as Usuario);
       });
-      setClientes(datos);
-      setCargando(false);
-    });
 
-    return () => unsubscribe();
+      setClientes(datos);
+      setHasMore(snapshot.docs.length === pageSize);
+
+      if (snapshot.docs.length > 0) {
+        setLastDocs(prev => {
+          const newDocs = [...prev];
+          newDocs[pageIndex] = snapshot.docs[snapshot.docs.length - 1];
+          return newDocs;
+        });
+      }
+    } catch (error) {
+      console.error("Error al cargar clientes:", error);
+      showToast("Hubo un error al cargar la lista de clientes.", "error");
+    } finally {
+      setCargando(false);
+    }
+  }, [pageSize, lastDocs, showToast]);
+
+  // Carga inicial
+  useEffect(() => {
+    fetchClientes(0, true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  /**
-   * Actualiza los datos de un cliente en Firestore
-   * (no se puede cambiar cédula ni contraseña desde aquí)
-   */
+  const nextPage = () => {
+    if (hasMore && !cargando) {
+      const next = currentPage + 1;
+      setCurrentPage(next);
+      fetchClientes(next);
+    }
+  };
+
+  const prevPage = () => {
+    if (currentPage > 0 && !cargando) {
+      const prev = currentPage - 1;
+      setCurrentPage(prev);
+      fetchClientes(prev);
+    }
+  };
+
+  const recargarActual = () => {
+    fetchClientes(currentPage);
+  };
+
   async function actualizarCliente(
     uid: string,
     datos: Partial<Pick<Usuario, "nombre" | "correo" | "celular">>
   ) {
-    const ref = doc(db, "usuarios", uid);
-    await updateDoc(ref, datos);
+    try {
+      const ref = doc(db, "usuarios", uid);
+      await updateDoc(ref, datos);
+      showToast("Cliente actualizado correctamente", "success");
+      recargarActual(); // Refrescar vista
+    } catch (error) {
+      showToast("Error al actualizar cliente", "error");
+      throw error;
+    }
   }
 
-  /**
-   * Elimina un cliente y todos sus datos relacionados (prendas y citas)
-   * Usa batch para eliminar todo atómicamente
-   */
   async function eliminarCliente(uid: string) {
-    const batch = writeBatch(db);
+    try {
+      const batch = writeBatch(db);
 
-    // 1. Eliminar todas las prendas del cliente
-    const prendasQuery = query(
-      collection(db, "prendas"),
-      where("clienteId", "==", uid)
-    );
-    const prendasSnap = await getDocs(prendasQuery);
-    prendasSnap.forEach((docSnap) => {
-      batch.delete(docSnap.ref);
-    });
+      const prendasQuery = query(collection(db, "prendas"), where("clienteId", "==", uid));
+      const prendasSnap = await getDocs(prendasQuery);
+      prendasSnap.forEach((docSnap) => batch.delete(docSnap.ref));
 
-    // 2. Eliminar todas las citas del cliente
-    const citasQuery = query(
-      collection(db, "citas"),
-      where("clienteId", "==", uid)
-    );
-    const citasSnap = await getDocs(citasQuery);
-    citasSnap.forEach((docSnap) => {
-      batch.delete(docSnap.ref);
-    });
+      const citasQuery = query(collection(db, "citas"), where("clienteId", "==", uid));
+      const citasSnap = await getDocs(citasQuery);
+      citasSnap.forEach((docSnap) => batch.delete(docSnap.ref));
 
-    // 3. Eliminar el documento del usuario
-    batch.delete(doc(db, "usuarios", uid));
+      batch.delete(doc(db, "usuarios", uid));
+      await batch.commit();
 
-    // Ejecutar todas las eliminaciones
-    await batch.commit();
+      showToast("Cliente y sus datos eliminados", "success");
+      
+      // Si era el último de la página, retroceder si es posible
+      if (clientes.length === 1 && currentPage > 0) {
+        const prev = currentPage - 1;
+        setCurrentPage(prev);
+        fetchClientes(prev);
+      } else {
+        recargarActual();
+      }
+    } catch (error) {
+      showToast("Error al eliminar cliente", "error");
+      throw error;
+    }
   }
 
-  /**
-   * Verifica si una cédula ya existe en Firestore
-   * (útil para validar unicidad al registrar)
-   */
   async function cedulaExiste(cedula: string): Promise<boolean> {
-    const q = query(
-      collection(db, "usuarios"),
-      where("cedula", "==", cedula)
-    );
+    const q = query(collection(db, "usuarios"), where("cedula", "==", cedula));
     const snap = await getDocs(q);
     return !snap.empty;
   }
@@ -108,5 +156,10 @@ export function useClientes() {
     actualizarCliente,
     eliminarCliente,
     cedulaExiste,
+    currentPage,
+    hasMore,
+    nextPage,
+    prevPage,
+    recargarActual
   };
 }

@@ -5,6 +5,7 @@ import { useClientes } from "../../hooks/useClientes";
 import { validarCedula, validarCorreo, validarPassword, validarCelular } from "../../utils/helpers";
 import { Spinner } from "../common/Spinner";
 import { Logo } from "../common/Logo";
+import { Eye, EyeOff } from "lucide-react";
 
 export function Registro() {
   const [formData, setFormData] = useState({
@@ -18,6 +19,8 @@ export function Registro() {
   
   const [errorLocal, setErrorLocal] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   
   const { registrarse, error: errorAuth, limpiarError } = useAuth();
   const { cedulaExiste } = useClientes();
@@ -152,30 +155,80 @@ export function Registro() {
 
             <div className="form-group">
               <label htmlFor="password">Contraseña</label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                value={formData.password}
-                onChange={handleChange}
-                placeholder="••••••••"
-                required
-                disabled={isSubmitting}
-              />
+              <div style={{ position: "relative", width: "100%" }}>
+                <input
+                  id="password"
+                  name="password"
+                  type={showPassword ? "text" : "password"}
+                  value={formData.password}
+                  onChange={handleChange}
+                  placeholder="••••••••"
+                  required
+                  disabled={isSubmitting}
+                  style={{ paddingRight: "40px" }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  tabIndex={-1}
+                  style={{
+                    position: "absolute",
+                    right: "12px",
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    background: "transparent",
+                    border: "none",
+                    padding: 0,
+                    margin: 0,
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: "#64748b"
+                  }}
+                >
+                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                </button>
+              </div>
             </div>
 
             <div className="form-group">
               <label htmlFor="confirmarPassword">Confirmar Contraseña</label>
-              <input
-                id="confirmarPassword"
-                name="confirmarPassword"
-                type="password"
-                value={formData.confirmarPassword}
-                onChange={handleChange}
-                placeholder="••••••••"
-                required
-                disabled={isSubmitting}
-              />
+              <div style={{ position: "relative", width: "100%" }}>
+                <input
+                  id="confirmarPassword"
+                  name="confirmarPassword"
+                  type={showConfirmPassword ? "text" : "password"}
+                  value={formData.confirmarPassword}
+                  onChange={handleChange}
+                  placeholder="••••••••"
+                  required
+                  disabled={isSubmitting}
+                  style={{ paddingRight: "40px" }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  tabIndex={-1}
+                  style={{
+                    position: "absolute",
+                    right: "12px",
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    background: "transparent",
+                    border: "none",
+                    padding: 0,
+                    margin: 0,
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: "#64748b"
+                  }}
+                >
+                  {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                </button>
+              </div>
             </div>
           </div>
 

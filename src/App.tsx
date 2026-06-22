@@ -1,7 +1,12 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import { RutaProtegida } from "./components/auth/RutaProtegida";
+import { useAuth } from "./context/AuthContext";
 import { Login } from "./components/auth/Login";
 import { Registro } from "./components/auth/Registro";
+
+// Toasts
+import { ToastProvider } from "./context/ToastContext";
+import { Toaster } from "react-hot-toast";
 
 // Layouts
 import { LayoutSastre } from "./components/layout/LayoutSastre";
@@ -20,11 +25,14 @@ import { InicioCliente } from "./components/cliente/InicioCliente";
 import { MisPrendas } from "./components/cliente/MisPrendas";
 import { MisMedidas } from "./components/cliente/MisMedidas";
 import { MisCitas } from "./components/cliente/MisCitas";
+import { PerfilCliente } from "./components/cliente/PerfilCliente";
 
 export default function App() {
   return (
-    <Routes>
-      {/* Rutas Públicas */}
+    <ToastProvider>
+      <Toaster position="top-right" />
+      <Routes>
+        {/* Rutas Públicas */}
       <Route path="/login" element={<Login />} />
       <Route path="/registro" element={<Registro />} />
 
@@ -63,11 +71,13 @@ export default function App() {
         <Route path="prendas" element={<MisPrendas />} />
         <Route path="medidas" element={<MisMedidas />} />
         <Route path="citas" element={<MisCitas />} />
+        <Route path="perfil" element={<PerfilCliente />} />
       </Route>
 
       {/* Ruta 404 / Catch-all */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
+    </ToastProvider>
   );
 }
 
@@ -76,8 +86,11 @@ export default function App() {
  * Solo se renderiza dentro de una RutaProtegida, por lo que el usuario ya existe
  */
 function RedireccionPorRol() {
-  // Aquí podríamos usar useAuth(), pero sabemos que RutaProtegida ya validó
-  // Por seguridad, si llega aquí es porque tiene sesión.
-  return <Navigate to="/sastre/dashboard" replace />; // Fallback a un rol u otro si es necesario, 
-  // Nota: RutaProtegida ya maneja la redirección correcta si no tiene el rol
+  const { usuario } = useAuth();
+
+  if (usuario?.rol === "cliente") {
+    return <Navigate to="/cliente/inicio" replace />;
+  }
+  // Sastre u otro rol → dashboard del sastre
+  return <Navigate to="/sastre/dashboard" replace />;
 }

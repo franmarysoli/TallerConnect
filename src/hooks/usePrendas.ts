@@ -2,7 +2,8 @@
  * usePrendas.ts — Hook para gestión de prendas
  * 
  * Maneja: crear prendas (con descuento de stock), cambiar estado,
- * obtener prendas por cliente, y medidas históricas.
+ * eliminar prendas (con devolución de stock), obtener prendas por cliente,
+ * y medidas históricas.
  */
 
 import { useState, useEffect, useCallback } from "react";
@@ -13,9 +14,12 @@ import {
   onSnapshot,
   addDoc,
   doc,
+  getDoc,
   updateDoc,
+  deleteDoc,
   Timestamp,
   orderBy,
+  arrayUnion,
 } from "firebase/firestore";
 import { db } from "../firebase/config";
 import type { Prenda, MedidasPrenda, EstadoPrenda } from "../types";
@@ -35,13 +39,14 @@ export interface DatosNuevaPrenda {
   precioMetro: number;
   costoManoObra: number;
   medidas: MedidasPrenda;
+  notas?: string;
 }
 
 /** Hook para gestión de prendas */
 export function usePrendas(filtroClienteId?: string) {
   const [prendas, setPrendas] = useState<Prenda[]>([]);
   const [cargando, setCargando] = useState(true);
-  const { descontarStock } = useTelas();
+  const { descontarStock, devolverStock } = useTelas();
   const { notificarPrendaTerminada } = useNotificaciones();
 
   // Escuchar prendas en tiempo real (opcionalmente filtradas por cliente)
@@ -106,10 +111,54 @@ export function usePrendas(filtroClienteId?: string) {
           fecha: Timestamp.now(),
         },
       ],
+      ...(datos.notas ? { notas: datos.notas } : {}),
     };
 
     await addDoc(collection(db, "prendas"), nuevaPrenda);
   }, [descontarStock]);
+
+  /**
+   * Actualiza una prenda existente y ajusta el stock de tela si es necesario
+   */
+  const actualizarPrenda = useCallback(async (
+    prendaId: string,
+    datosViejos: Prenda,
+    datosNuevos: DatosNuevaPrenda
+  ) => {
+    // 1. Ajustar stock si cambió la tela o los metros
+    if (datosViejos.telaId !== datosNuevos.telaId) {
+      await devolverStock(datosViejos.telaId, datosViejos.metrosUsados);
+      await descontarStock(datosNuevos.telaId, datosNuevos.metrosUsados);
+    } else if (datosViejos.metrosUsados !== datosNuevos.metrosUsados) {
+      const diferencia = datosNuevos.metrosUsados - datosViejos.metrosUsados;
+      if (diferencia > 0) {
+        await descontarStock(datosNuevos.telaId, diferencia);
+      } else if (diferencia < 0) {
+        await devolverStock(datosNuevos.telaId, Math.abs(diferencia));
+      }
+    }
+
+    // 2. Calcular nuevos costos
+    const costoTela = datosNuevos.metrosUsados * datosNuevos.precioMetro;
+    const costoTotal = costoTela + datosNuevos.costoManoObra;
+
+    // 3. Actualizar documento
+    const ref = doc(db, "prendas", prendaId);
+    await updateDoc(ref, {
+      clienteId: datosNuevos.clienteId,
+      clienteNombre: datosNuevos.clienteNombre,
+      telaId: datosNuevos.telaId,
+      telaNombre: datosNuevos.telaNombre,
+      estiloId: datosNuevos.estiloId,
+      estiloNombre: datosNuevos.estiloNombre,
+      metrosUsados: datosNuevos.metrosUsados,
+      costoTela,
+      costoManoObra: datosNuevos.costoManoObra,
+      costoTotal,
+      medidas: datosNuevos.medidas,
+      notas: datosNuevos.notas || "",
+    });
+  }, [descontarStock, devolverStock]);
 
   /**
    * Cambia el estado de una prenda y registra en el historial.
@@ -124,19 +173,15 @@ export function usePrendas(filtroClienteId?: string) {
   ) => {
     const ref = doc(db, "prendas", prendaId);
 
-    const actualizacion: Record<string, unknown> = {
-      estado: estadoNuevo,
-      historialEstados: [
-        // Nota: Firestore no soporta arrayUnion con objetos que contengan Timestamp,
-        // así que se usa el array completo de la prenda actual
-      ],
+    // Construir el nuevo registro de historial
+    const nuevoRegistro = {
+      estadoAnterior,
+      estadoNuevo,
+      fecha: Timestamp.now(),
     };
 
-    // Si la prenda se marca como terminada, registrar fecha
+    // Si la prenda se marca como terminada, registrar fecha y notificar
     if (estadoNuevo === "terminado") {
-      actualizacion.fechaTerminado = Timestamp.now();
-
-      // Enviar notificación al cliente
       notificarPrendaTerminada(
         correoCliente,
         nombreCliente,
@@ -144,21 +189,47 @@ export function usePrendas(filtroClienteId?: string) {
       );
     }
 
-    // Actualizar en Firestore
+    // Actualizar estado e historial en Firestore usando arrayUnion
     await updateDoc(ref, {
       estado: estadoNuevo,
+      historialEstados: arrayUnion(nuevoRegistro),
       ...(estadoNuevo === "terminado" ? { fechaTerminado: Timestamp.now() } : {}),
     });
 
-    // Registrar en el historial (usamos un campo separado para simplificar)
-    // En una app más compleja, se usaría una subcolección
     console.log(`📋 Estado cambiado: ${estadoAnterior} → ${estadoNuevo}`);
   }, [notificarPrendaTerminada]);
+
+  /**
+   * Elimina una prenda y devuelve el stock de tela utilizado.
+   */
+  const eliminarPrenda = useCallback(async (prendaId: string) => {
+    // Buscar la prenda en el estado local
+    let prenda = prendas.find((p) => p.id === prendaId);
+
+    // Si no está en el estado local, obtenerla directamente de Firestore
+    if (!prenda) {
+      const docSnap = await getDoc(doc(db, "prendas", prendaId));
+      if (!docSnap.exists()) {
+        throw new Error("Prenda no encontrada.");
+      }
+      prenda = { id: docSnap.id, ...docSnap.data() } as Prenda;
+    }
+
+    // Devolver el stock de tela
+    await devolverStock(prenda.telaId, prenda.metrosUsados);
+
+    // Eliminar el documento de Firestore
+    await deleteDoc(doc(db, "prendas", prendaId));
+
+    console.log(`🗑️ Prenda ${prendaId} eliminada. Stock devuelto: ${prenda.metrosUsados}m de tela ${prenda.telaNombre}.`);
+  }, [prendas, devolverStock]);
 
   return {
     prendas,
     cargando,
     crearPrenda,
+    actualizarPrenda,
     cambiarEstado,
+    eliminarPrenda,
   };
 }

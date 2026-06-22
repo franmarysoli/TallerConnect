@@ -9,7 +9,15 @@ import { Link } from "react-router-dom";
 import { Shirt, Edit, Trash2, Eye } from "lucide-react";
 
 export function ClientesLista() {
-  const { clientes, cargando, eliminarCliente } = useClientes();
+  const { 
+    clientes, 
+    cargando, 
+    eliminarCliente, 
+    currentPage, 
+    hasMore, 
+    nextPage, 
+    prevPage 
+  } = useClientes();
   const [busqueda, setBusqueda] = useState("");
   const [clienteEditar, setClienteEditar] = useState<Usuario | null>(null);
   const [clienteEliminar, setClienteEliminar] = useState<Usuario | null>(null);
@@ -35,7 +43,8 @@ export function ClientesLista() {
     }
   };
 
-  if (cargando) return <div className="flex-center p-8"><Spinner /></div>;
+  // Spinner solo para carga inicial o borrado completo
+  if (cargando && clientes.length === 0) return <div className="flex-center p-8"><Spinner /></div>;
 
   return (
     <div className="page-container">
@@ -110,6 +119,30 @@ export function ClientesLista() {
             )}
           </tbody>
         </table>
+      </div>
+
+      {/* Controles de Paginación */}
+      <div className="flex justify-between items-center mt-6 p-4 glass-panel rounded-lg">
+        <button 
+          className="btn btn-outline" 
+          onClick={prevPage} 
+          disabled={currentPage === 0 || cargando}
+        >
+          Anterior
+        </button>
+        
+        <div className="flex items-center gap-4">
+          <span className="text-sm font-medium">Página {currentPage + 1}</span>
+          {cargando && <Spinner />}
+        </div>
+        
+        <button 
+          className="btn btn-outline" 
+          onClick={nextPage} 
+          disabled={!hasMore || cargando}
+        >
+          Siguiente
+        </button>
       </div>
 
       {/* Vista móvil: Tarjetas */}

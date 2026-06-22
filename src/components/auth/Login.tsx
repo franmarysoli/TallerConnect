@@ -3,10 +3,12 @@ import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { Spinner } from "../common/Spinner";
 import { Logo } from "../common/Logo";
+import { Eye, EyeOff } from "lucide-react";
 
 export function Login() {
   const [correo, setCorreo] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { iniciarSesion, error, limpiarError } = useAuth();
   const navigate = useNavigate();
@@ -58,18 +60,43 @@ export function Login() {
 
           <div className="form-group">
             <label htmlFor="password">Contraseña</label>
-            <input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => {
-                setPassword(e.target.value);
-                limpiarError();
-              }}
-              placeholder="••••••••"
-              required
-              disabled={isSubmitting}
-            />
+            <div style={{ position: "relative", width: "100%" }}>
+              <input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  limpiarError();
+                }}
+                placeholder="••••••••"
+                required
+                disabled={isSubmitting}
+                style={{ paddingRight: "40px" }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                tabIndex={-1}
+                style={{
+                  position: "absolute",
+                  right: "12px",
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  background: "transparent",
+                  border: "none",
+                  padding: 0,
+                  margin: 0,
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "#64748b"
+                }}
+              >
+                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+              </button>
+            </div>
           </div>
 
           <button
