@@ -44,7 +44,7 @@ export function Navbar() {
                 <NavLink to="/cliente/prendas" className={navLinkClass} onClick={() => setIsMenuOpen(false)}>Prendas</NavLink>
                 <NavLink to="/cliente/medidas" className={navLinkClass} onClick={() => setIsMenuOpen(false)}>Medidas</NavLink>
                 <NavLink to="/cliente/citas" className={navLinkClass} onClick={() => setIsMenuOpen(false)}>Citas</NavLink>
-                <NavLink to="/cliente/perfil" className={navLinkClass} onClick={() => setIsMenuOpen(false)}>Mi Perfil</NavLink>
+                <NavLink to="/cliente/perfil" className={navLinkClass} onClick={() => setIsMenuOpen(false)}>Perfil</NavLink>
               </div>
             )}
 
@@ -62,10 +62,7 @@ export function Navbar() {
             <div className="user-profile">
               <div className="avatar">
                 {usuario.nombre.charAt(0).toUpperCase()}
-              </div>
-              <div className="user-info">
-                <span className="user-name">{usuario.nombre}</span>
-                <span className="user-role badge-role">{usuario.rol}</span>
+                <span className="avatar-status"></span>
               </div>
               <button
                 onClick={() => { cerrarSesion(); setIsMenuOpen(false); }}

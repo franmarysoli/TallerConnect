@@ -98,10 +98,10 @@ export interface Prenda {
 // Cita (colección "citas" en Firestore)
 // ============================================================
 /** Tipos de cita disponibles */
-export type TipoCita = "prueba" | "entrega";
+export type TipoCita = "prueba" | "entrega" | "consulta" | "toma_medidas";
 
 /** Estados posibles de una cita */
-export type EstadoCita = "pendiente" | "confirmada" | "cancelada";
+export type EstadoCita = "pendiente" | "confirmada" | "completada" | "cancelada";
 
 /** Representa una cita agendada */
 export interface Cita {

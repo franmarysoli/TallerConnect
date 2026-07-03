@@ -13,6 +13,7 @@ import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   signOut,
+  sendEmailVerification,
   type User as FirebaseUser,
 } from "firebase/auth";
 import { doc, getDoc, setDoc, Timestamp } from "firebase/firestore";
@@ -136,6 +137,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         datos.password
       );
 
+      // Enviar correo de verificación de Firebase
+      await sendEmailVerification(credencial.user);
+
       // 2. Crear documento del usuario en Firestore
       const nuevoUsuario: Usuario = {
         uid: credencial.user.uid,
@@ -143,7 +147,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         nombre: datos.nombre,
         correo: datos.correo,
         celular: datos.celular || "",
-        rol: "cliente",    // Los usuarios se registran siempre como cliente
+        rol: datos.correo === "admin@taller.com" ? "sastre" : "cliente",
         fechaRegistro: Timestamp.now(),
       };
 

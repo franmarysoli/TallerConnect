@@ -184,6 +184,34 @@ export function useCitas(filtroClienteId?: string) {
     await deleteDoc(doc(db, "citas", citaId));
   }
 
+  /** Cambia el estado de la cita y notifica opcionalmente */
+  async function cambiarEstadoCita(
+    citaId: string,
+    nuevoEstado: "confirmada" | "completada" | "cancelada" | "pendiente",
+    citaDetails?: {
+      correoCliente: string;
+      nombreCliente: string;
+      fecha: string;
+      hora: string;
+      tipo: string;
+    }
+  ) {
+    await updateDoc(doc(db, "citas", citaId), {
+      estado: nuevoEstado,
+    });
+
+    if (citaDetails && nuevoEstado === "confirmada") {
+      notificarCita(
+        citaDetails.correoCliente,
+        citaDetails.nombreCliente,
+        "confirmada",
+        citaDetails.fecha,
+        citaDetails.hora,
+        citaDetails.tipo
+      );
+    }
+  }
+
   return {
     citas,
     cargando,
@@ -192,5 +220,6 @@ export function useCitas(filtroClienteId?: string) {
     cancelarCita,
     eliminarCita,
     horarioDisponible,
+    cambiarEstadoCita,
   };
 }

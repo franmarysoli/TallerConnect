@@ -71,7 +71,7 @@ export function useNotificaciones() {
   const notificarCita = useCallback((
     correoCliente: string,
     nombreCliente: string,
-    accion: "agendada" | "modificada" | "cancelada",
+    accion: "agendada" | "modificada" | "cancelada" | "confirmada",
     fecha: string,
     hora: string,
     tipo: string
@@ -80,6 +80,7 @@ export function useNotificaciones() {
       agendada: "Cita agendada exitosamente",
       modificada: "Tu cita ha sido reprogramada",
       cancelada: "Tu cita ha sido cancelada",
+      confirmada: "Tu cita ha sido confirmada",
     };
 
     const subject = `${asuntos[accion]} — TallerConnect`;

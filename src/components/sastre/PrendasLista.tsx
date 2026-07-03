@@ -42,7 +42,12 @@ export function PrendasLista() {
 
     // Obtener correo del cliente para notificar si es necesario
     const cliente = clientes.find(c => c.uid === prenda.clienteId);
-    if (!cliente) return;
+    const correoCliente = cliente?.correo || "";
+    const nombreCliente = cliente?.nombre || prenda.clienteNombre;
+
+    if (nuevoEstado === "terminado" && !correoCliente) {
+      showToast("Se cambió el estado, pero el cliente no tiene correo para notificarle.", "info");
+    }
 
     setIsUpdatingState(prenda.id);
     try {
@@ -50,8 +55,8 @@ export function PrendasLista() {
         prenda.id,
         prenda.estado,
         nuevoEstado as EstadoPrenda,
-        cliente.correo,
-        cliente.nombre
+        correoCliente,
+        nombreCliente
       );
     } catch (error) {
       console.error("Error al cambiar estado:", error);

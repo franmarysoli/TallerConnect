@@ -34,12 +34,58 @@ export function RutaProtegida({ children, rolesPermitidos }: RutaProtegidaProps)
   }
 
   // 3. Si ya hay usuario en Firebase, pero aún no se carga de Firestore
-  // (caso raro de delay entre auth y db)
   if (!usuario) {
+    if (!cargando) {
+      return (
+        <div className="flex-center full-screen" style={{ flexDirection: "column", textAlign: "center", padding: "2rem" }}>
+          <h2 style={{ marginBottom: "1rem", color: "var(--color-error)" }}>Error de Perfil</h2>
+          <p style={{ marginBottom: "2rem" }}>
+            Tu cuenta está autenticada, pero no encontramos tus datos en la base de datos.<br/>
+            Esto suele ocurrir si creaste la cuenta manualmente fuera de la aplicación.
+          </p>
+          <button className="btn btn-primary" onClick={() => window.location.href = '/login'}>
+            Volver al Inicio
+          </button>
+        </div>
+      );
+    }
+    
     return (
       <div className="flex-center full-screen">
         <Spinner />
         <p style={{ marginLeft: "1rem" }}>Verificando permisos...</p>
+      </div>
+    );
+  }
+
+  // 4. Verificar si el correo está confirmado (Excepto para el admin de pruebas)
+  if (!firebaseUser.emailVerified && firebaseUser.email !== "admin@taller.com") {
+    return (
+      <div className="flex-center full-screen" style={{ flexDirection: "column", textAlign: "center", padding: "2rem" }}>
+        <h2 style={{ marginBottom: "1rem", color: "var(--color-primary)" }}>Verifica tu correo</h2>
+        <p style={{ marginBottom: "2rem" }}>
+          Hemos enviado un enlace de verificación a <strong>{firebaseUser.email}</strong>.
+          <br />
+          Por favor, revisa tu bandeja de entrada y verifica tu cuenta para poder continuar.
+        </p>
+        <div style={{ display: "flex", gap: "1rem" }}>
+          <button className="btn btn-primary" onClick={() => window.location.reload()}>
+            Ya lo verifiqué
+          </button>
+          <button 
+            className="btn btn-secondary" 
+            onClick={() => {
+              import("firebase/auth").then(({ signOut }) => {
+                import("../../firebase/config").then(({ auth }) => signOut(auth));
+              });
+            }}
+          >
+            Cerrar Sesión
+          </button>
+        </div>
+        <p style={{ marginTop: "1rem", fontSize: "0.9rem", color: "var(--color-text-light)" }}>
+          Si no ves el correo, revisa tu carpeta de spam.
+        </p>
       </div>
     );
   }

@@ -24,8 +24,26 @@ export function InicioCliente() {
   const ultimaPrendaTerminada = prendas.find(p => p.estado === "terminado");
   
   // Buscar próxima cita (pendiente o confirmada, futura)
-  // Simplificado para la demo
-  const proximasCitas = citas.filter(c => c.estado !== "cancelada");
+  const hoy = new Date();
+  const fechaActual = hoy.toISOString().split("T")[0];
+  const horaActual = hoy.getHours();
+
+  const proximasCitas = citas.filter(c => {
+    if (c.estado === "cancelada") return false;
+    if (c.fecha > fechaActual) return true;
+    if (c.fecha === fechaActual) {
+      const citaHora = parseInt(c.hora.split(":")[0], 10);
+      return citaHora > horaActual;
+    }
+    return false; // Es de un día anterior
+  });
+  
+  // Ordenar por fecha y hora para mostrar la más próxima primero
+  proximasCitas.sort((a, b) => {
+    if (a.fecha !== b.fecha) return a.fecha.localeCompare(b.fecha);
+    return a.hora.localeCompare(b.hora);
+  });
+
   const proximaCita = proximasCitas.length > 0 ? proximasCitas[0] : null;
 
   return (
@@ -104,7 +122,10 @@ export function InicioCliente() {
             {proximaCita ? (
               <div className="text-center">
                 <div className="flex justify-center mb-4 text-primary">
-                  {proximaCita.tipo === 'prueba' ? <Shirt size={48} /> : <ShoppingBag size={48} />}
+                  {proximaCita.tipo === 'prueba' ? <Shirt size={48} /> : 
+                   proximaCita.tipo === 'entrega' ? <ShoppingBag size={48} /> :
+                   proximaCita.tipo === 'toma_medidas' ? <Ruler size={48} /> :
+                   <Calendar size={48} />}
                 </div>
                 <div className="text-2xl font-bold text-primary mb-1">
                   {formatearFechaCorta(proximaCita.fecha)} a las {proximaCita.hora}

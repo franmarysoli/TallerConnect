@@ -11,9 +11,9 @@ import { Scissors, Ruler, Shirt, CheckCircle } from 'lucide-react';
 // Estados de las prendas con sus colores asociados
 // ============================================================
 export const ESTADOS_PRENDA = [
-  { valor: "corte",     etiqueta: "Corte",     color: "#BE185D", icono: <Scissors size={16} /> },
+  { valor: "corte",     etiqueta: "Corte",     color: "#FF385C", icono: <Scissors size={16} /> },
   { valor: "costura",   etiqueta: "Costura",   color: "#D97706", icono: <Ruler size={16} /> },
-  { valor: "prueba",    etiqueta: "Prueba",    color: "#EC4899", icono: <Shirt size={16} /> },
+  { valor: "prueba",    etiqueta: "Prueba",    color: "#FF8E8E", icono: <Shirt size={16} /> },
   { valor: "terminado", etiqueta: "Terminado", color: "#10b981", icono: <CheckCircle size={16} /> },
 ] as const;
 
@@ -42,14 +42,24 @@ export const HORARIOS_DISPONIBLES = [
 // ============================================================
 // Tipos y estados de citas
 // ============================================================
-export const TIPOS_CITA = [
-  { valor: "prueba",  etiqueta: "Prueba" },
-  { valor: "entrega", etiqueta: "Entrega" },
+export const TIPOS_CITA_CLIENTE = [
+  { valor: "consulta", etiqueta: "Consulta Inicial" },
+  { valor: "toma_medidas", etiqueta: "Toma de Medidas" },
 ] as const;
+
+export const TIPOS_CITA_SASTRE = [
+  { valor: "consulta", etiqueta: "Consulta Inicial" },
+  { valor: "toma_medidas", etiqueta: "Toma de Medidas" },
+  { valor: "prueba",  etiqueta: "Prueba de Prenda" },
+  { valor: "entrega", etiqueta: "Entrega Final" },
+] as const;
+
+export const TIPOS_CITA = TIPOS_CITA_SASTRE;
 
 export const ESTADOS_CITA = [
   { valor: "pendiente",  etiqueta: "Pendiente",  color: "#f59e0b" },
   { valor: "confirmada", etiqueta: "Confirmada", color: "#10b981" },
+  { valor: "completada", etiqueta: "Completada", color: "#3b82f6" },
   { valor: "cancelada",  etiqueta: "Cancelada",  color: "#ef4444" },
 ] as const;
 

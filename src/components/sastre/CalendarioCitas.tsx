@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Calendar, dateFnsLocalizer } from "react-big-calendar";
 import { format, parse, startOfWeek, getDay } from "date-fns";
 import { es as esES } from "date-fns/locale";
@@ -11,6 +11,7 @@ import { Modal } from "../common/Modal";
 import { HORARIOS_DISPONIBLES, TIPOS_CITA } from "../../utils/constantes";
 import { fechaHoy } from "../../utils/helpers";
 import type { Cita, TipoCita } from "../../types";
+import { useToast } from "../../context/ToastContext";
 
 // Configuración de react-big-calendar en español
 const locales = {
@@ -29,14 +30,27 @@ const localizer = dateFnsLocalizer({
 function CitaFormSastre({ onClose }: { onClose: () => void }) {
   const { crearCita } = useCitas();
   const { clientes } = useClientes();
+  const { showToast } = useToast();
 
   const [clienteId, setClienteId] = useState("");
   const [fecha, setFecha] = useState(fechaHoy());
   const [hora, setHora] = useState<string>(HORARIOS_DISPONIBLES[0]);
-  const [tipo, setTipo] = useState<TipoCita>("prueba");
+  const [tipo, setTipo] = useState<TipoCita>("consulta");
   const [observaciones, setObservaciones] = useState("");
   const [errorLocal, setErrorLocal] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Filtrar horarios disponibles según la fecha seleccionada
+  const horariosValidos = (fecha === fechaHoy()
+    ? HORARIOS_DISPONIBLES.filter(h => parseInt(h.split(":")[0], 10) > new Date().getHours())
+    : [...HORARIOS_DISPONIBLES]) as Array<typeof HORARIOS_DISPONIBLES[number]>;
+
+  // Actualizar la hora seleccionada si ya no es válida
+  useEffect(() => {
+    if (horariosValidos.length > 0 && !horariosValidos.includes(hora)) {
+      setHora(horariosValidos[0]);
+    }
+  }, [fecha, hora, horariosValidos]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,6 +61,19 @@ function CitaFormSastre({ onClose }: { onClose: () => void }) {
     }
     if (!fecha) {
       return setErrorLocal("Debes seleccionar una fecha.");
+    }
+
+    const hoy = fechaHoy();
+    if (fecha < hoy) {
+      return setErrorLocal("No puedes agendar una cita en el pasado.");
+    }
+
+    if (fecha === hoy) {
+      const horaActual = new Date().getHours();
+      const horaSeleccionada = parseInt(hora.split(":")[0], 10);
+      if (horaSeleccionada <= horaActual) {
+        return setErrorLocal("La hora seleccionada ya pasó. Por favor elige un horario futuro.");
+      }
     }
 
     const clienteSel = clientes.find((c) => c.uid === clienteId);
@@ -69,6 +96,7 @@ function CitaFormSastre({ onClose }: { onClose: () => void }) {
         },
         clienteSel.correo
       );
+      showToast("Cita agendada correctamente", "success");
       onClose();
     } catch (error: any) {
       console.error("Error al crear cita:", error);
@@ -122,11 +150,14 @@ function CitaFormSastre({ onClose }: { onClose: () => void }) {
               required
               disabled={isSubmitting}
             >
-              {HORARIOS_DISPONIBLES.map((h) => (
+              {horariosValidos.map((h) => (
                 <option key={h} value={h}>
                   {h}
                 </option>
               ))}
+              {horariosValidos.length === 0 && (
+                <option value="" disabled>No hay horarios disponibles hoy</option>
+              )}
             </select>
           </div>
         </div>
@@ -187,7 +218,9 @@ function CitaFormSastre({ onClose }: { onClose: () => void }) {
 
 // ─── Componente principal ───────────────────────────────────────────
 export function CalendarioCitas() {
-  const { citas, cargando, eliminarCita } = useCitas();
+  const { citas, cargando, eliminarCita, cambiarEstadoCita } = useCitas();
+  const { clientes } = useClientes();
+  const { showToast } = useToast();
   const [modalAbierto, setModalAbierto] = useState(false);
   const [citaSeleccionada, setCitaSeleccionada] = useState<Cita | null>(null);
 
@@ -229,7 +262,7 @@ export function CalendarioCitas() {
   // Personalización de colores según estado
   const eventStyleGetter = (event: any) => {
     const cita = event.resource as Cita;
-    let backgroundColor = "#3b82f6"; // default blue
+    let backgroundColor = "#3b82f6"; // default blue (completada)
     
     if (cita.estado === "confirmada") backgroundColor = "#10b981"; // green
     if (cita.estado === "pendiente") backgroundColor = "#f59e0b"; // yellow
@@ -255,7 +288,36 @@ export function CalendarioCitas() {
   const handleEliminar = async () => {
     if (citaSeleccionada?.id && confirm("¿Eliminar esta cita permanentemente?")) {
       await eliminarCita(citaSeleccionada.id);
+      showToast("Cita eliminada", "success");
       setModalAbierto(false);
+    }
+  };
+
+  const handleCambiarEstado = async (nuevoEstado: "confirmada" | "completada" | "cancelada") => {
+    if (!citaSeleccionada?.id) return;
+    
+    // Buscar el correo del cliente
+    const cliente = clientes.find(c => c.uid === citaSeleccionada.clienteId);
+    const correoCliente = cliente?.correo || "";
+
+    try {
+      await cambiarEstadoCita(
+        citaSeleccionada.id, 
+        nuevoEstado,
+        {
+          correoCliente,
+          nombreCliente: citaSeleccionada.clienteNombre,
+          fecha: citaSeleccionada.fecha,
+          hora: citaSeleccionada.hora,
+          tipo: citaSeleccionada.tipo
+        }
+      );
+      
+      showToast(`Cita marcada como ${nuevoEstado}`, "success");
+      setModalAbierto(false);
+    } catch (error) {
+      console.error("Error al cambiar estado:", error);
+      showToast("No se pudo cambiar el estado", "error");
     }
   };
 
@@ -330,10 +392,30 @@ export function CalendarioCitas() {
             )}
             
             <div className="flex justify-end gap-2 mt-6 pt-4 border-t border-glass">
+              {citaSeleccionada.estado === "pendiente" && (
+                <>
+                  <button className="btn btn-primary" onClick={() => handleCambiarEstado("confirmada")}>
+                    Confirmar
+                  </button>
+                  <button className="btn btn-outline text-error" onClick={() => handleCambiarEstado("cancelada")}>
+                    Cancelar
+                  </button>
+                </>
+              )}
+              {citaSeleccionada.estado === "confirmada" && (
+                <>
+                  <button className="btn btn-primary bg-blue-600 hover:bg-blue-700" onClick={() => handleCambiarEstado("completada")}>
+                    Completar
+                  </button>
+                  <button className="btn btn-outline text-error" onClick={() => handleCambiarEstado("cancelada")}>
+                    Cancelar
+                  </button>
+                </>
+              )}
               <button className="btn btn-outline" onClick={() => setModalAbierto(false)}>
                 Cerrar
               </button>
-              <button className="btn btn-outline text-error" onClick={handleEliminar}>
+              <button className="btn btn-outline text-error" onClick={handleEliminar} title="Eliminar permanentemente">
                 Eliminar
               </button>
             </div>

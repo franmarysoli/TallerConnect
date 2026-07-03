@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
+import { useToast } from "../../context/ToastContext";
 import { useCitas } from "../../hooks/useCitas";
-import { HORARIOS_DISPONIBLES, TIPOS_CITA } from "../../utils/constantes";
+import { HORARIOS_DISPONIBLES, TIPOS_CITA_CLIENTE } from "../../utils/constantes";
 import { fechaHoy } from "../../utils/helpers";
 import { Spinner } from "../common/Spinner";
 import type { Cita } from "../../types";
@@ -14,16 +15,29 @@ interface CitaFormProps {
 export function CitaForm({ cita, onClose }: CitaFormProps) {
   const { usuario } = useAuth();
   const { crearCita, reprogramarCita } = useCitas();
+  const { showToast } = useToast();
   
   const [formData, setFormData] = useState({
     fecha: cita?.fecha || fechaHoy(),
     hora: cita?.hora || "09:00",
-    tipo: cita?.tipo || "prueba",
+    tipo: cita?.tipo || "consulta",
     observaciones: cita?.observaciones || "",
   });
 
   const [errorLocal, setErrorLocal] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Filtrar horarios disponibles según la fecha seleccionada
+  const horariosValidos = (formData.fecha === fechaHoy()
+    ? HORARIOS_DISPONIBLES.filter(h => parseInt(h.split(":")[0], 10) > new Date().getHours())
+    : [...HORARIOS_DISPONIBLES]) as Array<typeof HORARIOS_DISPONIBLES[number]>;
+
+  // Actualizar la hora seleccionada si ya no es válida para la fecha actual
+  useEffect(() => {
+    if (horariosValidos.length > 0 && !horariosValidos.includes(formData.hora)) {
+      setFormData(prev => ({ ...prev, hora: horariosValidos[0] }));
+    }
+  }, [formData.fecha, formData.hora, horariosValidos]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -36,8 +50,20 @@ export function CitaForm({ cita, onClose }: CitaFormProps) {
     if (!usuario) return;
 
     // Validación de fecha (no agendar en el pasado)
-    if (formData.fecha < fechaHoy()) {
+    const hoy = fechaHoy();
+    if (formData.fecha < hoy) {
       return setErrorLocal("No puedes agendar una cita en el pasado.");
+    }
+    
+    // Validación de hora si la fecha es hoy
+    if (formData.fecha === hoy) {
+      const horaActual = new Date().getHours();
+      const horaSeleccionada = parseInt(formData.hora.split(":")[0], 10);
+      
+      // Permitimos agendar si la hora seleccionada es mayor a la hora actual
+      if (horaSeleccionada <= horaActual) {
+        return setErrorLocal("La hora seleccionada ya pasó. Por favor elige un horario futuro.");
+      }
     }
 
     setIsSubmitting(true);
@@ -55,6 +81,7 @@ export function CitaForm({ cita, onClose }: CitaFormProps) {
           usuario.correo,
           usuario.nombre
         );
+        showToast("Cita reprogramada correctamente", "success");
       } else {
         // Crear nueva
         await crearCita({
@@ -66,6 +93,7 @@ export function CitaForm({ cita, onClose }: CitaFormProps) {
           estado: "pendiente",
           observaciones: formData.observaciones
         }, usuario.correo);
+        showToast("Cita agendada correctamente", "success");
       }
       onClose();
     } catch (error: any) {
@@ -104,9 +132,12 @@ export function CitaForm({ cita, onClose }: CitaFormProps) {
             required
             disabled={isSubmitting}
           >
-            {HORARIOS_DISPONIBLES.map(h => (
+            {horariosValidos.map(h => (
               <option key={h} value={h}>{h}</option>
             ))}
+            {horariosValidos.length === 0 && (
+              <option value="" disabled>No hay horarios disponibles hoy</option>
+            )}
           </select>
         </div>
       </div>
@@ -114,7 +145,7 @@ export function CitaForm({ cita, onClose }: CitaFormProps) {
       <div className="form-group">
         <label htmlFor="tipo">Motivo de la Cita</label>
         <div className="flex gap-4 mt-2">
-          {TIPOS_CITA.map(t => (
+          {TIPOS_CITA_CLIENTE.map(t => (
             <label key={t.valor} className="flex items-center gap-2 cursor-pointer">
               <input
                 type="radio"
