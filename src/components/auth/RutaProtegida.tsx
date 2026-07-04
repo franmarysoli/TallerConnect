@@ -69,7 +69,19 @@ export function RutaProtegida({ children, rolesPermitidos }: RutaProtegidaProps)
           Por favor, revisa tu bandeja de entrada y verifica tu cuenta para poder continuar.
         </p>
         <div style={{ display: "flex", gap: "1rem" }}>
-          <button className="btn btn-primary" onClick={() => window.location.reload()}>
+          <button 
+            className="btn btn-primary" 
+            onClick={async () => {
+              if (firebaseUser) {
+                await firebaseUser.reload();
+                if (firebaseUser.emailVerified) {
+                  window.location.reload();
+                } else {
+                  import('react-hot-toast').then(toast => toast.default.error('Aún no está verificado. Revisa tu correo o espera un momento.'));
+                }
+              }
+            }}
+          >
             Ya lo verifiqué
           </button>
           <button 

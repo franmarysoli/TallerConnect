@@ -3,6 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { Spinner } from "../common/Spinner";
 import { Logo } from "../common/Logo";
+import { useToast } from "../../context/ToastContext";
 import { Eye, EyeOff } from "lucide-react";
 
 export function Login() {
@@ -10,7 +11,8 @@ export function Login() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { iniciarSesion, error, limpiarError } = useAuth();
+  const { iniciarSesion, limpiarError } = useAuth();
+  const { showToast } = useToast();
   const navigate = useNavigate();
 
   async function handleSubmit(e: React.FormEvent) {
@@ -25,8 +27,9 @@ export function Login() {
       // El onAuthStateChanged y las RutasProtegidas se encargarán
       // de redirigir al panel correspondiente (sastre o cliente)
       navigate("/");
-    } catch (err) {
+    } catch (err: any) {
       setIsSubmitting(false);
+      showToast(err.message || "Ocurrió un error inesperado.", "error");
     }
   }
 
@@ -38,8 +41,6 @@ export function Login() {
           <h1>TallerConnect</h1>
           <p>Inicia sesión para gestionar tus prendas y citas</p>
         </div>
-
-        {error && <div className="alert alert-error">{error}</div>}
 
         <form onSubmit={handleSubmit} className="login-form">
           <div className="form-group">

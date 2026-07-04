@@ -118,10 +118,10 @@ export function PrendaForm({ onClose, prenda }: PrendaFormProps) {
       hombros: Number(medidas.hombros) || 0,
     };
 
-    // Validar medidas >= 0
-    const medidasInvalidas = Object.values(medidasFinales).some(m => m < 0);
+    // Validar medidas > 0
+    const medidasInvalidas = Object.values(medidasFinales).some(m => m <= 0);
     if (medidasInvalidas) {
-      return setErrorLocal("Todas las medidas deben ser mayores o iguales a 0.");
+      return setErrorLocal("Todas las medidas deben ser mayores a 0.");
     }
 
     // Si estamos editando y cambiaron los metros/tela, validar contra el stock disponible + el devuelto
@@ -278,7 +278,7 @@ export function PrendaForm({ onClose, prenda }: PrendaFormProps) {
                 <label className="text-xs font-semibold text-muted mb-1 block">{m.etiqueta}</label>
                 <input
                   type="number"
-                  min="0" max="100" step="any"
+                  min="0.1" max="100" step="any"
                   placeholder="0"
                   value={medidas[m.clave]}
                   onChange={(e) => handleMedidaChange(m.clave, e.target.value)}

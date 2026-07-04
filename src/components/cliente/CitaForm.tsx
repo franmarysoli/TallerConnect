@@ -34,7 +34,7 @@ export function CitaForm({ cita, onClose }: CitaFormProps) {
 
   // Actualizar la hora seleccionada si ya no es válida para la fecha actual
   useEffect(() => {
-    if (horariosValidos.length > 0 && !horariosValidos.includes(formData.hora)) {
+    if (horariosValidos.length > 0 && !horariosValidos.includes(formData.hora as any)) {
       setFormData(prev => ({ ...prev, hora: horariosValidos[0] }));
     }
   }, [formData.fecha, formData.hora, horariosValidos]);

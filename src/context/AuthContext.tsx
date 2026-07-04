@@ -61,6 +61,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Escuchar cambios en el estado de autenticación de Firebase
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      setCargando(true);
       setFirebaseUser(user);
 
       if (user) {
@@ -106,21 +107,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       switch (firebaseError.code) {
         case "auth/user-not-found":
           setError("No existe una cuenta con este correo.");
+          throw new Error("No existe una cuenta con este correo.");
           break;
         case "auth/wrong-password":
         case "auth/invalid-credential":
-          setError("Contraseña incorrecta.");
+          setError("Correo o contraseña incorrectos.");
+          throw new Error("Correo o contraseña incorrectos.");
           break;
         case "auth/invalid-email":
           setError("El formato del correo no es válido.");
+          throw new Error("El formato del correo no es válido.");
           break;
         case "auth/too-many-requests":
           setError("Demasiados intentos. Espera unos minutos.");
+          throw new Error("Demasiados intentos. Espera unos minutos.");
           break;
         default:
           setError("Error al iniciar sesión. Verifica tus credenciales.");
+          throw new Error("Error al iniciar sesión. Verifica tus credenciales.");
       }
-      throw err;
     }
   }
 

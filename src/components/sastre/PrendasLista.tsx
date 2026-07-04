@@ -6,9 +6,10 @@ import { BadgeEstado } from "../common/BadgeEstado";
 import { Spinner } from "../common/Spinner";
 import { Modal } from "../common/Modal";
 import { PrendaForm } from "./PrendaForm";
+import { CitaFormSastre } from "./CitaFormSastre";
 import { ESTADOS_PRENDA } from "../../utils/constantes";
 import { formatearFechaCorta, formatearMoneda } from "../../utils/helpers";
-import type { Prenda, EstadoPrenda } from "../../types";
+import type { Prenda, EstadoPrenda, TipoCita } from "../../types";
 import { useToast } from "../../context/ToastContext";
 import { Eye, Trash2, Edit } from "lucide-react";
 
@@ -29,6 +30,7 @@ export function PrendasLista() {
   const [prendaVerDetalles, setPrendaVerDetalles] = useState<Prenda | null>(null);
   const [prendaAEliminar, setPrendaAEliminar] = useState<Prenda | null>(null);
   const [eliminando, setEliminando] = useState(false);
+  const [citaPrenda, setCitaPrenda] = useState<{ clienteId: string; tipo: TipoCita } | null>(null);
 
   // Filtrado de prendas
   const prendasFiltradas = prendas.filter((prenda) => {
@@ -58,6 +60,11 @@ export function PrendasLista() {
         correoCliente,
         nombreCliente
       );
+      
+      if (nuevoEstado === "prueba") {
+        setCitaPrenda({ clienteId: prenda.clienteId, tipo: "prueba" });
+      }
+
     } catch (error) {
       console.error("Error al cambiar estado:", error);
       showToast("Hubo un error al cambiar el estado.", "error");
@@ -343,6 +350,24 @@ export function PrendasLista() {
               </button>
             </div>
           </div>
+        )}
+      </Modal>
+
+      {/* Modal Agendar Cita de Prueba */}
+      <Modal
+        isOpen={!!citaPrenda}
+        onClose={() => setCitaPrenda(null)}
+        titulo="Agendar Cita de Prueba"
+      >
+        <div className="mb-4 text-sm text-muted">
+          La prenda ha pasado a estado de Prueba. Puedes agendar una cita con el cliente ahora.
+        </div>
+        {citaPrenda && (
+          <CitaFormSastre
+            onClose={() => setCitaPrenda(null)}
+            initialClienteId={citaPrenda.clienteId}
+            initialTipo={citaPrenda.tipo}
+          />
         )}
       </Modal>
 
