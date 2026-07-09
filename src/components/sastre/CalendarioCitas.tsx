@@ -222,9 +222,6 @@ export function CalendarioCitas() {
                   </button>
                 </>
               )}
-              <button className="btn btn-outline" onClick={() => setModalAbierto(false)}>
-                Cerrar
-              </button>
               <button className="btn btn-outline text-error" onClick={handleEliminar} title="Eliminar permanentemente">
                 Eliminar
               </button>

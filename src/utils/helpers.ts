@@ -43,7 +43,7 @@ export function formatearMoneda(valor: number): string {
 
 /** Valida que una cédula contenga solo números y tenga entre 5 y 15 dígitos */
 export function validarCedula(cedula: string): boolean {
-  return /^\d{5,15}$/.test(cedula);
+  return /^\d{7,8}$/.test(cedula);
 }
 
 /** Valida formato de correo electrónico */
@@ -59,7 +59,7 @@ export function validarPassword(password: string): boolean {
 /** Valida un número de celular (opcional, pero si se ingresa debe tener formato válido) */
 export function validarCelular(celular: string): boolean {
   if (!celular) return true; // El celular es opcional
-  return /^\d{7,15}$/.test(celular);
+  return /^\d{10,11}$/.test(celular);
 }
 
 // ============================================================
