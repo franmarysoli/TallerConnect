@@ -3,10 +3,12 @@ import { RutaProtegida } from "./components/auth/RutaProtegida";
 import { useAuth } from "./context/AuthContext";
 import { Login } from "./components/auth/Login";
 import { Registro } from "./components/auth/Registro";
+import { RecuperarPassword } from "./components/auth/RecuperarPassword";
 
 // Toasts
 import { ToastProvider } from "./context/ToastContext";
 import { Toaster } from "react-hot-toast";
+import { NotFound } from "./components/common/NotFound";
 
 // Layouts
 import { LayoutSastre } from "./components/layout/LayoutSastre";
@@ -17,6 +19,7 @@ import { Dashboard } from "./components/sastre/Dashboard";
 import { ClientesLista } from "./components/sastre/ClientesLista";
 import { TelasLista } from "./components/sastre/TelasLista";
 import { EstilosLista } from "./components/sastre/EstilosLista";
+import { FinanzasDashboard } from "./components/sastre/FinanzasDashboard";
 import { PrendasLista } from "./components/sastre/PrendasLista";
 import { CalendarioCitas } from "./components/sastre/CalendarioCitas";
 
@@ -35,6 +38,7 @@ export default function App() {
         {/* Rutas Públicas */}
       <Route path="/login" element={<Login />} />
       <Route path="/registro" element={<Registro />} />
+      <Route path="/recuperar-password" element={<RecuperarPassword />} />
 
       {/* Redirección inicial (ruta raíz) */}
       <Route path="/" element={<RutaProtegida><RedireccionPorRol /></RutaProtegida>} />
@@ -53,6 +57,7 @@ export default function App() {
         <Route path="clientes" element={<ClientesLista />} />
         <Route path="telas" element={<TelasLista />} />
         <Route path="estilos" element={<EstilosLista />} />
+        <Route path="finanzas" element={<FinanzasDashboard />} />
         <Route path="prendas" element={<PrendasLista />} />
         <Route path="citas" element={<CalendarioCitas />} />
       </Route>
@@ -75,7 +80,7 @@ export default function App() {
       </Route>
 
       {/* Ruta 404 / Catch-all */}
-      <Route path="*" element={<Navigate to="/" replace />} />
+      <Route path="*" element={<NotFound />} />
     </Routes>
     </ToastProvider>
   );

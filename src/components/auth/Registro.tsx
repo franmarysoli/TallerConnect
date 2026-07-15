@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, Navigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { useClientes } from "../../hooks/useClientes";
 import { validarCedula, validarCorreo, validarPassword, validarCelular } from "../../utils/helpers";
@@ -23,9 +23,13 @@ export function Registro() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   
-  const { registrarse, error: errorAuth, limpiarError } = useAuth();
+  const { registrarse, error: errorAuth, limpiarError, usuario } = useAuth();
   const { cedulaExiste } = useClientes();
   const navigate = useNavigate();
+
+  if (usuario) {
+    return <Navigate to="/" replace />;
+  }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -285,9 +289,12 @@ export function Registro() {
 
         <div className="login-footer" style={{ marginTop: "2rem", textAlign: "center" }}>
           <span style={{ borderTop: "2px solid var(--color-border)", display: "block", width: "30px", margin: "0 auto 1.5rem auto" }}></span>
-          <p style={{ color: "var(--color-text-light)", fontSize: "0.95rem" }}>
-            ¿Ya tienes cuenta? <Link to="/login" className="link" style={{ color: "var(--color-primary)", fontWeight: "700" }}>Inicia sesión</Link>
-          </p>
+          <div style={{ color: "var(--color-text-light)", fontSize: "0.95rem" }}>
+            ¿Ya tienes cuenta?
+            <Link to="/login" className="link" style={{ display: "block", marginTop: "0.5rem", color: "var(--color-primary)", fontWeight: "700" }}>
+              Inicia sesión
+            </Link>
+          </div>
         </div>
       </div>
     </div>

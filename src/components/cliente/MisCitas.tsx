@@ -41,6 +41,10 @@ export function MisCitas() {
         const startDate = new Date(year, month - 1, day, hour, minute);
         const endDate = new Date(startDate.getTime() + 60 * 60 * 1000);
 
+        if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+          return null;
+        }
+
         return {
           id: cita.id,
           title: `${cita.tipo} - ${cita.estado}`,
@@ -97,6 +101,11 @@ export function MisCitas() {
     }
   };
 
+  const minTime = new Date();
+  minTime.setHours(8, 0, 0, 0);
+  const maxTime = new Date();
+  maxTime.setHours(19, 0, 0, 0);
+
   return (
     <div className="py-6">
       <div className="flex-between mb-6 flex-wrap gap-4">
@@ -115,7 +124,7 @@ export function MisCitas() {
         </button>
       </div>
 
-      <div className="card glass-panel h-[600px] p-4 mb-8">
+      <div className="card glass-panel p-4 mb-8" style={{ height: 600 }}>
         <Calendar
           localizer={localizer}
           events={eventos}
@@ -134,6 +143,8 @@ export function MisCitas() {
           eventPropGetter={eventStyleGetter}
           onSelectEvent={handleSelectEvent}
           views={['month', 'week', 'agenda']}
+          min={minTime}
+          max={maxTime}
         />
       </div>
 

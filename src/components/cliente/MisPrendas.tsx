@@ -73,6 +73,22 @@ export function MisPrendas() {
                       {formatearMoneda(prenda.costoTotal)}
                     </span>
                   </div>
+                  {(prenda.abono !== undefined && prenda.abono > 0) && (
+                    <>
+                      <div className="flex justify-between text-sm mt-2">
+                        <span className="text-muted">Abonado:</span>
+                        <span className="font-bold text-success">
+                          {formatearMoneda(prenda.abono)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-sm mt-2 pt-2 border-t border-glass">
+                        <span className="text-muted">Saldo Pendiente:</span>
+                        <span className="font-bold text-error">
+                          {formatearMoneda(Math.max(0, prenda.costoTotal - prenda.abono))}
+                        </span>
+                      </div>
+                    </>
+                  )}
                 </div>
 
                 {/* Tracking Visual */}

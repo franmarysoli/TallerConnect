@@ -86,6 +86,7 @@ export interface Prenda {
   costoTela: number;                // metros × precio (calculado)
   costoManoObra: number;            // Costo de mano de obra
   costoTotal: number;               // costoTela + costoManoObra
+  abono: number;                    // Dinero recaudado hasta el momento
   estado: EstadoPrenda;             // Estado actual
   medidas: MedidasPrenda;           // Medidas de la prenda
   fechaInicio: Timestamp;           // Fecha de inicio de confección

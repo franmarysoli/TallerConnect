@@ -55,6 +55,10 @@ export function CalendarioCitas() {
         const startDate = new Date(year, month - 1, day, hour, minute);
         const endDate = new Date(startDate.getTime() + 60 * 60 * 1000); // 1 hora de duración
 
+        if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+          return null;
+        }
+
         return {
           id: cita.id,
           title: `${cita.clienteNombre || "Cliente"} (${cita.tipo || "Cita"})`,
@@ -131,6 +135,12 @@ export function CalendarioCitas() {
     }
   };
 
+  // Crear fechas seguras para min y max del calendario (evitar año 0)
+  const minTime = new Date();
+  minTime.setHours(8, 0, 0, 0);
+  const maxTime = new Date();
+  maxTime.setHours(19, 0, 0, 0);
+
   return (
     <div className="page-container">
       <div className="flex-between mb-6">
@@ -146,7 +156,7 @@ export function CalendarioCitas() {
         </button>
       </div>
 
-      <div className="card glass-panel h-[600px] p-4">
+      <div className="card glass-panel p-4" style={{ height: 600 }}>
         <Calendar
           localizer={localizer}
           events={eventos}
@@ -170,8 +180,8 @@ export function CalendarioCitas() {
           eventPropGetter={eventStyleGetter}
           onSelectEvent={handleSelectEvent}
           views={['month', 'week', 'day']}
-          min={new Date(0, 0, 0, 8, 0, 0)} // Empieza a las 8am en vista de semana/día
-          max={new Date(0, 0, 0, 19, 0, 0)} // Termina a las 7pm
+          min={minTime} // Empieza a las 8am en vista de semana/día
+          max={maxTime} // Termina a las 7pm
         />
       </div>
 
@@ -183,12 +193,12 @@ export function CalendarioCitas() {
       >
         {citaSeleccionada ? (
           <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div><strong>Cliente:</strong> {citaSeleccionada.clienteNombre}</div>
               <div><strong>Tipo:</strong> <span className="capitalize">{citaSeleccionada.tipo}</span></div>
               <div><strong>Fecha:</strong> {citaSeleccionada.fecha}</div>
               <div><strong>Hora:</strong> {citaSeleccionada.hora}</div>
-              <div>
+              <div className="sm:col-span-2">
                 <strong>Estado:</strong> 
                 <span className={`badge ml-2 badge-${citaSeleccionada.estado}`}>
                   {citaSeleccionada.estado}
@@ -196,33 +206,33 @@ export function CalendarioCitas() {
               </div>
             </div>
             {citaSeleccionada.observaciones && (
-              <div className="bg-glass-dark p-3 rounded">
+              <div className="bg-glass-dark p-3 rounded mt-4">
                 <strong>Notas:</strong> {citaSeleccionada.observaciones}
               </div>
             )}
             
-            <div className="flex justify-end gap-2 mt-6 pt-4 border-t border-glass">
+            <div className="flex flex-col sm:flex-row justify-end gap-2 mt-6 pt-4 border-t border-glass">
               {citaSeleccionada.estado === "pendiente" && (
                 <>
-                  <button className="btn btn-primary" onClick={() => handleCambiarEstado("confirmada")}>
+                  <button className="btn btn-primary w-full sm:w-auto" onClick={() => handleCambiarEstado("confirmada")}>
                     Confirmar
                   </button>
-                  <button className="btn btn-outline text-error" onClick={() => handleCambiarEstado("cancelada")}>
+                  <button className="btn btn-outline text-error w-full sm:w-auto" onClick={() => handleCambiarEstado("cancelada")}>
                     Cancelar
                   </button>
                 </>
               )}
               {citaSeleccionada.estado === "confirmada" && (
                 <>
-                  <button className="btn btn-primary bg-blue-600 hover:bg-blue-700" onClick={() => handleCambiarEstado("completada")}>
+                  <button className="btn btn-primary bg-blue-600 hover:bg-blue-700 w-full sm:w-auto" onClick={() => handleCambiarEstado("completada")}>
                     Completar
                   </button>
-                  <button className="btn btn-outline text-error" onClick={() => handleCambiarEstado("cancelada")}>
+                  <button className="btn btn-outline text-error w-full sm:w-auto" onClick={() => handleCambiarEstado("cancelada")}>
                     Cancelar
                   </button>
                 </>
               )}
-              <button className="btn btn-outline text-error" onClick={handleEliminar} title="Eliminar permanentemente">
+              <button className="btn btn-outline text-error w-full sm:w-auto" onClick={handleEliminar} title="Eliminar permanentemente">
                 Eliminar
               </button>
             </div>

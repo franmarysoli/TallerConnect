@@ -14,6 +14,7 @@ import {
   createUserWithEmailAndPassword,
   signOut,
   sendEmailVerification,
+  sendPasswordResetEmail,
   type User as FirebaseUser,
 } from "firebase/auth";
 import { doc, getDoc, setDoc, Timestamp } from "firebase/firestore";
@@ -33,6 +34,7 @@ interface AuthContextType {
   iniciarSesion: (correo: string, password: string) => Promise<void>;
   registrarse: (datos: DatosRegistro) => Promise<void>;
   cerrarSesion: () => Promise<void>;
+  recuperarPassword: (correo: string) => Promise<void>;
   limpiarError: () => void;
 }
 
@@ -183,6 +185,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   // ============================================================
+  // Recuperar contraseña
+  // ============================================================
+  async function recuperarPassword(correo: string) {
+    try {
+      await sendPasswordResetEmail(auth, correo);
+    } catch (err: unknown) {
+      console.error("Error al enviar correo de recuperación:", err);
+      throw new Error("No se pudo enviar el correo de recuperación. Verifica el email.");
+    }
+  }
+
+  // ============================================================
   // Cerrar sesión
   // ============================================================
   async function cerrarSesion() {
@@ -208,6 +222,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     iniciarSesion,
     registrarse,
     cerrarSesion,
+    recuperarPassword,
     limpiarError,
   };
 

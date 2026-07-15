@@ -100,6 +100,7 @@ export function usePrendas(filtroClienteId?: string) {
       costoTela,
       costoManoObra: datos.costoManoObra,
       costoTotal,
+      abono: 0,
       estado: "corte", // Estado inicial siempre es "corte"
       medidas: datos.medidas,
       fechaInicio: Timestamp.now(),
@@ -180,6 +181,8 @@ export function usePrendas(filtroClienteId?: string) {
       fecha: Timestamp.now(),
     };
 
+    let datosAdicionales: any = {};
+
     // Si la prenda se marca como terminada, registrar fecha y notificar
     if (estadoNuevo === "terminado") {
       notificarPrendaTerminada(
@@ -187,17 +190,33 @@ export function usePrendas(filtroClienteId?: string) {
         nombreCliente,
         `Prenda #${prendaId.slice(0, 6)}`
       );
+      
+      datosAdicionales.fechaTerminado = Timestamp.now();
+
+      // Buscar el costo total para asentar el abono automáticamente
+      let costoTotal = 0;
+      const prendaLocal = prendas.find(p => p.id === prendaId);
+      if (prendaLocal) {
+        costoTotal = prendaLocal.costoTotal;
+      } else {
+        const docSnap = await getDoc(ref);
+        if (docSnap.exists()) {
+          costoTotal = docSnap.data().costoTotal;
+        }
+      }
+      // Automáticamente asumir que al entregarse (terminado), está pagada
+      datosAdicionales.abono = costoTotal;
     }
 
     // Actualizar estado e historial en Firestore usando arrayUnion
     await updateDoc(ref, {
       estado: estadoNuevo,
       historialEstados: arrayUnion(nuevoRegistro),
-      ...(estadoNuevo === "terminado" ? { fechaTerminado: Timestamp.now() } : {}),
+      ...datosAdicionales,
     });
 
     console.log(`📋 Estado cambiado: ${estadoAnterior} → ${estadoNuevo}`);
-  }, [notificarPrendaTerminada]);
+  }, [notificarPrendaTerminada, prendas]);
 
   /**
    * Elimina una prenda y devuelve el stock de tela utilizado.
@@ -224,6 +243,17 @@ export function usePrendas(filtroClienteId?: string) {
     console.log(`🗑️ Prenda ${prendaId} eliminada. Stock devuelto: ${prenda.metrosUsados}m de tela ${prenda.telaNombre}.`);
   }, [prendas, devolverStock]);
 
+  /**
+   * Actualiza el abono (dinero recaudado) de una prenda
+   */
+  const actualizarAbono = useCallback(async (prendaId: string, nuevoAbono: number) => {
+    const ref = doc(db, "prendas", prendaId);
+    await updateDoc(ref, {
+      abono: nuevoAbono
+    });
+    console.log(`💰 Abono actualizado para prenda ${prendaId}: ${nuevoAbono}`);
+  }, []);
+
   return {
     prendas,
     cargando,
@@ -231,5 +261,6 @@ export function usePrendas(filtroClienteId?: string) {
     actualizarPrenda,
     cambiarEstado,
     eliminarPrenda,
+    actualizarAbono,
   };
 }

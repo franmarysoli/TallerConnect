@@ -18,9 +18,16 @@ export function CitaFormSastre({ onClose, initialClienteId, initialTipo }: CitaF
   const { clientes } = useClientes();
   const { showToast } = useToast();
 
+  const hoy = fechaHoy();
+  const horasDisponiblesHoy = HORARIOS_DISPONIBLES.filter(h => parseInt(h.split(":")[0], 10) > new Date().getHours());
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const fechaManana = tomorrow.toISOString().split("T")[0];
+  const fechaDefecto = horasDisponiblesHoy.length > 0 ? hoy : fechaManana;
+
   const [clienteId, setClienteId] = useState(initialClienteId || "");
-  const [fecha, setFecha] = useState(fechaHoy());
-  const [hora, setHora] = useState<string>(HORARIOS_DISPONIBLES[0]);
+  const [fecha, setFecha] = useState(fechaDefecto);
+  const [hora, setHora] = useState<string>(horasDisponiblesHoy.length > 0 ? horasDisponiblesHoy[0] : "09:00");
   const [tipo, setTipo] = useState<TipoCita>(initialTipo || "consulta");
   const [observaciones, setObservaciones] = useState("");
   const [errorLocal, setErrorLocal] = useState<string | null>(null);
@@ -149,7 +156,10 @@ export function CitaFormSastre({ onClose, initialClienteId, initialTipo }: CitaF
         <div className="form-group">
           <label>Tipo de Cita</label>
           <div className="flex gap-6 mt-1 flex-wrap">
-            {TIPOS_CITA.map((t) => (
+            {(initialTipo
+              ? TIPOS_CITA.filter(t => t.valor === initialTipo)
+              : TIPOS_CITA
+            ).map((t) => (
               <label key={t.valor} className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="radio"

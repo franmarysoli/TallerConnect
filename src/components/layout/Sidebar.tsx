@@ -1,5 +1,5 @@
 import { NavLink } from "react-router-dom";
-import { LayoutDashboard, Users, Shirt, Calendar, Layers, Palette } from "lucide-react";
+import { LayoutDashboard, Users, Shirt, Calendar, Layers, Palette, Wallet } from "lucide-react";
 
 export function Sidebar() {
   const enlaces = [
@@ -9,6 +9,7 @@ export function Sidebar() {
     { to: "/sastre/citas",     texto: "Citas",     icono: <Calendar size={20} /> },
     { to: "/sastre/telas",     texto: "Telas",     icono: <Layers size={20} /> },
     { to: "/sastre/estilos",   texto: "Estilos",   icono: <Palette size={20} /> },
+    { to: "/sastre/finanzas",  texto: "Finanzas",  icono: <Wallet size={20} /> },
   ];
 
   return (

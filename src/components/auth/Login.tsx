@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, Navigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { Spinner } from "../common/Spinner";
 import { Logo } from "../common/Logo";
@@ -11,9 +11,14 @@ export function Login() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { iniciarSesion, limpiarError } = useAuth();
+  const { iniciarSesion, limpiarError, usuario } = useAuth();
   const { showToast } = useToast();
   const navigate = useNavigate();
+
+  // Si ya está logueado, lo mandamos al home
+  if (usuario) {
+    return <Navigate to="/" replace />;
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -24,8 +29,6 @@ export function Login() {
 
     try {
       await iniciarSesion(correo, password);
-      // El onAuthStateChanged y las RutasProtegidas se encargarán
-      // de redirigir al panel correspondiente (sastre o cliente)
       navigate("/");
     } catch (err: any) {
       setIsSubmitting(false);
@@ -70,7 +73,7 @@ export function Login() {
                   setPassword(e.target.value);
                   limpiarError();
                 }}
-                placeholder="••••••••"
+                placeholder="Tu contraseña"
                 required
                 disabled={isSubmitting}
                 style={{ paddingRight: "40px" }}
@@ -83,6 +86,19 @@ export function Login() {
               >
                 {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
               </button>
+            </div>
+            <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "8px" }}>
+              <Link
+                to="/recuperar-password"
+                style={{ 
+                  color: "var(--color-foreground)", 
+                  fontWeight: 600, 
+                  textDecoration: "underline",
+                  fontSize: "0.875rem"
+                }}
+              >
+                ¿Olvidaste tu contraseña?
+              </Link>
             </div>
           </div>
 

@@ -16,7 +16,7 @@ export function CitaForm({ cita, onClose }: CitaFormProps) {
   const { usuario } = useAuth();
   const { crearCita, reprogramarCita } = useCitas();
   const { showToast } = useToast();
-  
+
   const [formData, setFormData] = useState({
     fecha: cita?.fecha || fechaHoy(),
     hora: cita?.hora || "09:00",
@@ -54,12 +54,12 @@ export function CitaForm({ cita, onClose }: CitaFormProps) {
     if (formData.fecha < hoy) {
       return setErrorLocal("No puedes agendar una cita en el pasado.");
     }
-    
+
     // Validación de hora si la fecha es hoy
     if (formData.fecha === hoy) {
       const horaActual = new Date().getHours();
       const horaSeleccionada = parseInt(formData.hora.split(":")[0], 10);
-      
+
       // Permitimos agendar si la hora seleccionada es mayor a la hora actual
       if (horaSeleccionada <= horaActual) {
         return setErrorLocal("La hora seleccionada ya pasó. Por favor elige un horario futuro.");
